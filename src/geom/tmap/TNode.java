@@ -18,6 +18,11 @@ public class TNode<T> implements Node<T> {
 	}
 	
 	@Override
+	public T locate(Segment q) {
+		return id;
+	}
+	
+	@Override
 	public Node<T> step(Point2d q) {
 		return null;
 	}
