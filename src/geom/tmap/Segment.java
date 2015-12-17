@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import geom.Point2d;
 
-class Segment implements Serializable {
+public class Segment implements Serializable {
 	/**
 	 * 
 	 */
@@ -113,6 +113,6 @@ class Segment implements Serializable {
 		return "{" + p + " -> " + q + "}";
 	}
 
-	Point2d p;
-	Point2d q;
+	public Point2d p;
+	public Point2d q;
 }

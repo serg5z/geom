@@ -1,25 +1,26 @@
-package geom.tmap;
+package geom.tmap_long;
 
 import geom.Point2d;
+import geom.tmap.Segment;
 
-public class YNode<T> extends DecisionNode<T> {
+public class YNodeLong extends DecisionNode {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public YNode (Segment s) {
+	public YNodeLong (Segment s) {
 		this(s, null, null);
 	}
 	
-	public YNode (Segment s, Node<T> left, Node<T> right) {
+	public YNodeLong (Segment s, NodeLong left, NodeLong right) {
 		super(left, right);
 		this.s = s;
 	}
 		
 	@Override
-	public T locate(Point2d q) {
-		Node<T> n = right;
+	public long locate(Point2d q) {
+		NodeLong n = right;
 		
 		if(s.below(q)) {
 			n = left;
@@ -29,8 +30,8 @@ public class YNode<T> extends DecisionNode<T> {
 	}
 	
 	@Override
-	public T locate(Segment q) {
-		Node<T> n = right;
+	public long locate(Segment q) {
+		NodeLong n = right;
 		
 		if(s.below(q)) {
 			n = left;
@@ -44,5 +45,5 @@ public class YNode<T> extends DecisionNode<T> {
 		return s.toString();
 	}
 
-	public Segment s;
+	Segment s;
 }

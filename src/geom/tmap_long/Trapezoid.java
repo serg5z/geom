@@ -1,16 +1,16 @@
-package geom.tmap;
+package geom.tmap_long;
 
 import java.io.Serializable;
 
 import geom.Point2d;
 
-class Trapezoid<T> implements Serializable {
+class Trapezoid implements Serializable {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	
-	public Trapezoid(Point2d left, Point2d right, DynamicSegment<T> top, DynamicSegment<T> bottom) {
+	public Trapezoid(Point2d left, Point2d right, DynamicSegmentLong top, DynamicSegmentLong bottom) {
 		if(left.x > right.x) {
 			throw new RuntimeException(left+" > "+right);
 		}
@@ -33,12 +33,12 @@ class Trapezoid<T> implements Serializable {
 //		return  (p.x >= left.x) && (p.x < right.x) && top.above(p) && bottom.below(p); 
 	}
 	
-	public void update(Trapezoid<T> ul, Trapezoid<T> ll, Trapezoid<T> ur, Trapezoid<T> lr) {
+	public void update(Trapezoid ul, Trapezoid ll, Trapezoid ur, Trapezoid lr) {
 		updateLeft(ul, ll);
 		updateRight(ur, lr);
 	}
 	
-	public void updateLeft(Trapezoid<T> ul, Trapezoid<T> ll) {
+	public void updateLeft(Trapezoid ul, Trapezoid ll) {
 	    upper_left = ul;
 	    lower_left = ll;
 	    
@@ -50,7 +50,7 @@ class Trapezoid<T> implements Serializable {
 	    }
 	}
 	
-	public void updateRight(Trapezoid<T> ur, Trapezoid<T> lr) {
+	public void updateRight(Trapezoid ur, Trapezoid lr) {
 	    upper_right = ur;
 	    lower_right = lr;
 	    
@@ -72,8 +72,7 @@ class Trapezoid<T> implements Serializable {
 		boolean result = false;
 		
 		if(obj instanceof Trapezoid) {
-			@SuppressWarnings("unchecked")
-			Trapezoid<T> t = (Trapezoid<T>)obj;
+			Trapezoid t = (Trapezoid)obj;
 			
 			result = (left.x == t.left.x) && (right.x == t.right.x) && top.equals(t.top) && bottom.equals(t.bottom);
 		}
@@ -86,14 +85,14 @@ class Trapezoid<T> implements Serializable {
 		return "{"+left+" <-> "+right+" ^ "+top+" v "+bottom +" id:"+id+"}";
 	}
 	
-	T id;
+	long id;
 	Point2d left;
 	Point2d right;
-	DynamicSegment<T> top;
-	DynamicSegment<T> bottom;
-	transient Trapezoid<T> upper_left;
-	transient Trapezoid<T> lower_left;
-	transient Trapezoid<T> upper_right;
-	transient Trapezoid<T> lower_right;
-	transient DynamicNode<T> node;
+	DynamicSegmentLong top;
+	DynamicSegmentLong bottom;
+	transient Trapezoid upper_left;
+	transient Trapezoid lower_left;
+	transient Trapezoid upper_right;
+	transient Trapezoid lower_right;
+	transient DynamicNode node;
 }

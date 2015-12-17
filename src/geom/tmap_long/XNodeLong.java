@@ -1,25 +1,26 @@
-package geom.tmap;
+package geom.tmap_long;
 
 import geom.Point2d;
+import geom.tmap.Segment;
 
-public class XNode<T> extends DecisionNode<T> {
+public class XNodeLong extends DecisionNode {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public XNode(Point2d p) {
+	public XNodeLong(Point2d p) {
 		this(p, null, null);
 	}
 	
-	public XNode(Point2d p, Node<T> left, Node<T> right) {
+	public XNodeLong(Point2d p, NodeLong left, NodeLong right) {
 		super(left, right);
 		this.p = p;
 	}
 	
 	@Override
-	public T locate(Point2d q) {
-		Node<T> n = right;
+	public long locate(Point2d q) {
+		NodeLong n = right;
 		
 		if((q.x < p.x) || ((q.x == p.x) && (q.y < p.y))){
 			n = left;
@@ -29,8 +30,8 @@ public class XNode<T> extends DecisionNode<T> {
 	}
 	
 	@Override
-	public T locate(Segment q) {
-		Node<T> n = right;
+	public long locate(Segment q) {
+		NodeLong n = right;
 		
 		if((q.p.x < p.x) || ((q.p.x == p.x) && (q.p.y < p.y))){
 			n = left;
@@ -44,5 +45,5 @@ public class XNode<T> extends DecisionNode<T> {
 		return p.toString();
 	}
 
-	public Point2d p;
+	Point2d p;
 }

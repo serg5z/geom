@@ -23,14 +23,9 @@ public class TNode<T> implements Node<T> {
 	}
 	
 	@Override
-	public Node<T> step(Point2d q) {
-		return null;
-	}
-	
-	@Override
 	public String toString() {
 		return id == null ? "null" : id.toString();
 	}
 
-	T id;
+	public T id;
 }

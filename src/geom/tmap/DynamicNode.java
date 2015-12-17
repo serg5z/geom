@@ -8,16 +8,8 @@ class DynamicNode<T> implements Node<Trapezoid<T>> {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public DynamicNode(Point2d p) {
-		this(new XNode<Trapezoid<T>>(p));
-	}
-	
 	public DynamicNode(Point2d p, DynamicNode<T> left, DynamicNode<T> right) {
 		this(new XNode<Trapezoid<T>>(p, left, right));
-	}
-	
-	public DynamicNode(DynamicSegment<T> s) {
-		this(new YNode<Trapezoid<T>>(s));
 	}
 	
 	public DynamicNode(DynamicSegment<T> s, DynamicNode<T> left, DynamicNode<T> right) {
@@ -39,11 +31,6 @@ class DynamicNode<T> implements Node<Trapezoid<T>> {
 	}
 	
 	@Override
-	public DynamicNode<T> step(Point2d q) {
-		return null;
-	}
-	
-	@Override
 	public Trapezoid<T> locate(Segment q) {
 		return nn.locate(q);
 	}
@@ -55,8 +42,7 @@ class DynamicNode<T> implements Node<Trapezoid<T>> {
 				n = new TNode<T>(t.id.id);
 			} else if(nn instanceof YNode) {
 				YNode<Trapezoid<T>> y = (YNode<Trapezoid<T>>)nn;
-				YNode<T> yn = new YNode<T>(new Segment(y.s.p, y.s.q));
-				
+				YNode<T> yn = new YNode<T>(((DynamicSegment<T>)y.s).s);
 				yn.left = ((DynamicNode<T>)y.left).simplify();
 				yn.right = ((DynamicNode<T>)y.right).simplify();
 				
@@ -64,7 +50,6 @@ class DynamicNode<T> implements Node<Trapezoid<T>> {
 			} else if(nn instanceof XNode) {
 				XNode<Trapezoid<T>> x = (XNode<Trapezoid<T>>)nn;
 				XNode<T> xn = new XNode<T>(x.p);
-				
 				xn.left = ((DynamicNode<T>)x.left).simplify();
 				xn.right = ((DynamicNode<T>)x.right).simplify();
 				

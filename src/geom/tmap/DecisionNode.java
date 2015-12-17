@@ -11,6 +11,6 @@ abstract class DecisionNode<T> implements Node<T> {
 		this.right = right;
 	}
 	
-	Node<T> left;
-	Node<T> right;
+	public Node<T> left;
+	public Node<T> right;
 }

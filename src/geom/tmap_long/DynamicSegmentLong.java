@@ -1,18 +1,19 @@
-package geom.tmap;
+package geom.tmap_long;
 
 import geom.Point2d;
+import geom.tmap.Segment;
 
-class DynamicSegment<T> extends Segment {
+class DynamicSegmentLong extends Segment {
 		/**
 		 * 
 		 */
 		private static final long serialVersionUID = 1L;
 		
-		public DynamicSegment(Point2d p, Point2d q) {
-			this(p, q, null, null);
+		public DynamicSegmentLong(Point2d p, Point2d q) {
+			this(p, q, -1, -1);
 		}
 		
-		public DynamicSegment(Point2d p, Point2d q, T left_id, T right_id) {
+		public DynamicSegmentLong(Point2d p, Point2d q, long left_id, long right_id) {
 			super(p, q);
 			reverse = false;
 			if(p.x < q.x) {
@@ -37,22 +38,17 @@ class DynamicSegment<T> extends Segment {
 		
 		@Override
 		public int hashCode() {
-			int lh = (left_id == null) ? 0 : left_id.hashCode();
-			int rh = (right_id == null) ? 0 : right_id.hashCode();
-			return p.hashCode()+q.hashCode()+lh+rh;
+			return p.hashCode()+q.hashCode()+Long.hashCode(left_id)+Long.hashCode(right_id);
 		}
 
 		@Override
 		public boolean equals(Object obj) {
 			boolean result = false;
 			
-			if(obj instanceof DynamicSegment) {
-				@SuppressWarnings("unchecked")
-				DynamicSegment<T> s = (DynamicSegment<T>)obj;
-				boolean leq = (left_id == null) ? (s.left_id == null) : left_id.equals(s.left_id);
-				boolean req = (right_id == null) ? (s.right_id == null) : right_id.equals(s.right_id);
+			if(obj instanceof DynamicSegmentLong) {
+				DynamicSegmentLong s = (DynamicSegmentLong)obj;
 				
-				result = leq && req && p.equals(s.p) && q.equals(s.q);
+				result = (left_id == s.left_id) && (right_id == s.right_id) && p.equals(s.p) && q.equals(s.q);
 			}
 			return result;
 		}
@@ -68,9 +64,9 @@ class DynamicSegment<T> extends Segment {
 		}
 
 		boolean reverse;
-		T left_id;
-		T right_id;
-		Trapezoid<T> above;
-		Trapezoid<T> below;
+		long left_id;
+		long right_id;
+		Trapezoid above;
+		Trapezoid below;
 		Segment s;
 	}
