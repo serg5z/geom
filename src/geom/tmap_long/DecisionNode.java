@@ -1,6 +1,6 @@
 package geom.tmap_long;
 
-abstract class DecisionNode implements NodeLong {
+abstract public class DecisionNode implements NodeLong {
 	/**
 	 * 
 	 */
@@ -11,6 +11,6 @@ abstract class DecisionNode implements NodeLong {
 		this.right = right;
 	}
 	
-	NodeLong left;
-	NodeLong right;
+	public NodeLong left;
+	public NodeLong right;
 }

@@ -2,9 +2,11 @@ package geom.tmap_long;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.sql.Connection;
@@ -28,15 +30,20 @@ import org.postgis.Point;
 import org.postgis.Polygon;
 
 import geom.Point2d;
-import geom.Polygon2d;
 import geom.Tuple2;
-import geom.tmap.TNode;
+import geom.tmap.Segment;
 import geom.tmap.XNode;
 import geom.tmap.YNode;
 
 public class TMap {
 	static int no = 1;
 	static PrintStream dout;
+	static HashMap<Point2d, Point2d> points = new HashMap<Point2d, Point2d>(40000000);
+	
+	static class Context {
+		Trapezoid above;
+		Trapezoid below;		
+	}
 	
 	static int compare(Point2d p1, Point2d p2) {
 		int result = 0;
@@ -71,7 +78,7 @@ public class TMap {
 		return result;
 	}
 	
-	static void splitP(Trapezoid t, DynamicSegmentLong s, int split_no, int subsplit) {
+	static void splitP(Trapezoid t, EdgeLong s, Context c, int split_no, int subsplit) {
 		try {
 //			dout.println("Start of segment(p) is in "+DandN(t));
 			Point2d r = min(s.q, t.right);
@@ -81,8 +88,8 @@ public class TMap {
 			Trapezoid C = new Trapezoid(s.p, r, s, t.bottom);
 			
 			A.id = t.id;
-			B.id = s.left_id;
-			C.id = s.right_id;
+			B.id = s.left;
+			C.id = s.right;
 			
 			A.updateLeft(t.upper_left, t.lower_left);
 			B.update(A, null, t.upper_right, null);
@@ -96,8 +103,8 @@ public class TMap {
 							new DynamicNode(B), 
 							new DynamicNode(C)));
 			
-			s.above = B;
-			s.below = C;
+			c.above = B;
+			c.below = C;
 //			dout.println(" Split D into 3 trapezoids: "+DandN(A)+", "+DandN(B)+", "+DandN(C));
 		} catch(Throwable e) {
 			System.out.println(t);
@@ -107,7 +114,7 @@ public class TMap {
 		}
 	}
 	
-	static <T> void splitQ(Trapezoid t, DynamicSegmentLong s, int split_no, int subsplit) {
+	static <T> void splitQ(Trapezoid t, EdgeLong s, Context c, int split_no, int subsplit) {
 		try {
 //			dout.println("End of segment(q) is in "+DandN(t));
 			Point2d l = max(s.p, t.left);
@@ -119,26 +126,26 @@ public class TMap {
 			DynamicNode nB;
 			DynamicNode nC;
 			
-			if((s.above != null) && t.top.equals(s.above.top)) {
-				B = s.above;
+			if((c.above != null) && t.top.equals(c.above.top)) {
+				B = c.above;
 				nB = B.node;
 				B.right = s.q;
 			} else {
 				B = new Trapezoid(l, s.q, t.top, s);
 				nB = new DynamicNode(B);
-				B.id = s.left_id;
-				B.updateLeft(t.upper_left, s.above);
+				B.id = s.left;
+				B.updateLeft(t.upper_left, c.above);
 			}
 			
-			if((s.below != null) && t.bottom.equals(s.below.bottom)) {
-				C = s.below;
+			if((c.below != null) && t.bottom.equals(c.below.bottom)) {
+				C = c.below;
 				nC = C.node;
 				C.right = s.q;
 			} else {
 				C = new Trapezoid(l, s.q, s, t.bottom);
 				nC = new DynamicNode(C);
-				C.id = s.right_id;
-				C.updateLeft(s.below, t.lower_left);
+				C.id = s.right;
+				C.updateLeft(c.below, t.lower_left);
 			}
 			
 			t.node.nn = new XNode<Trapezoid>(
@@ -157,7 +164,7 @@ public class TMap {
 		}
 	}
 	
-	static <T> void split(Trapezoid t, DynamicSegmentLong s, int split_no, int subsplit) {
+	static <T> void split(Trapezoid t, EdgeLong s, Context c, int split_no, int subsplit) {
 		try {
 //			dout.println("Segment end points outside of "+DandN(t));
 			Point2d l = t.left;
@@ -168,30 +175,30 @@ public class TMap {
 			DynamicNode nA;
 			DynamicNode nB;
 			
-			if((s.above != null) && t.top.equals(s.above.top)) {
-				A = s.above;
+			if((c.above != null) && t.top.equals(c.above.top)) {
+				A = c.above;
 				nA = A.node;
 				A.updateRight(t.upper_right, null);
 				A.right = t.right;
 			} else {
 				A = new Trapezoid(l, r, t.top, s);
 				nA = new DynamicNode(A);
-				A.id = s.left_id;
-				A.update(t.upper_left, s.above, t.upper_right, null);
-				s.above = A;
+				A.id = s.left;
+				A.update(t.upper_left, c.above, t.upper_right, null);
+				c.above = A;
 			}
 			
-			if((s.below != null) && t.bottom.equals(s.below.bottom)) {
-				B = s.below;
+			if((c.below != null) && t.bottom.equals(c.below.bottom)) {
+				B = c.below;
 				nB = B.node;
 				B.updateRight(null, t.lower_right);
 				B.right = t.right;
 			} else {
 				B = new Trapezoid(l, r, s, t.bottom);
 				nB = new DynamicNode(B);
-				B.id = s.right_id;
-				B.update(s.below, t.lower_left, null, t.lower_right);
-				s.below = B;
+				B.id = s.right;
+				B.update(c.below, t.lower_left, null, t.lower_right);
+				c.below = B;
 			}
 			
 			t.node.nn = new YNode<Trapezoid>(s, nA, nB);
@@ -206,7 +213,7 @@ public class TMap {
 		}
 	}
 	
-	static <T> void split4(Trapezoid t, DynamicSegmentLong s, int split_no, int subsplit) {
+	static <T> void split4(Trapezoid t, EdgeLong s, int split_no, int subsplit) {
 //		dout.println("Both points in "+DandN(t));
 
 		Trapezoid A = new Trapezoid(t.left, s.p, t.top, t.bottom);
@@ -216,8 +223,8 @@ public class TMap {
 		
 		A.id = t.id;
 		B.id = t.id;
-		C.id = s.left_id;
-		D.id = s.right_id;
+		C.id = s.left;
+		D.id = s.right;
 		
 		A.updateLeft(t.upper_left, t.lower_left);
 		C.update(A, null, B, null);
@@ -249,12 +256,75 @@ public class TMap {
 				+" ,lr: "+ (t.lower_right == null ? "" : t.lower_right.id)+")";
 	}
 	
-	static <T> DynamicNode build(List<DynamicSegmentLong> S) throws FileNotFoundException {
+	static <T> void add(DynamicNode root, EdgeLong[] S) {
+		int split_no = 0;
+		Context c = new Context();
+		
+		for(EdgeLong s : S) {
+			split_no++;
+			if(s != null) {
+				c.above = null;
+				c.below = null;
+				int subsplit = 0;
+				PrintStream out;
+	//			dout.print("Adding "+s+". ");
+	
+				Trapezoid d0 = root.locate(s);
+				
+				if(compare(s.q, d0.right) == 0) {
+					if(compare(s.p, d0.left) == 0) {
+						split(d0, s, c, split_no, subsplit);
+					} else {
+						splitP(d0, s, c, split_no, subsplit);
+					}
+				} else if(compare(s.q, d0.right) < 0) {
+					if(compare(d0.left, s.p) == 0) {
+						splitQ(d0, s, c, split_no, subsplit);					
+					} else {
+						split4(d0, s, split_no, subsplit);
+					}				
+				} else {
+					if(compare(d0.left, s.p) == 0) {
+						split(d0, s, c, split_no, subsplit);					
+					} else {
+						splitP(d0, s, c, split_no, subsplit);
+					}				
+					
+					Trapezoid t = d0;
+	
+					if(s.below(d0.right)) {
+						t = d0.lower_right;
+					} else {
+						t = d0.upper_right;
+					}
+					
+					while(compare(s.q, t.right) > 0) {
+						subsplit++;
+						
+						split(t, s, c, split_no, subsplit);
+						
+						if(s.below(t.right)) {
+							t = t.lower_right;
+						} else {
+							t = t.upper_right;
+						}
+					}
+					if(compare(s.q, t.right) == 0) {
+						split(t, s, c, split_no, subsplit);
+					} else {
+						splitQ(t, s, c, split_no, subsplit);
+					}
+				}
+			}
+		}
+	}
+	
+	static <T> DynamicNode build(List<EdgeLong> S) throws FileNotFoundException {
 		Point2d p = S.get(0).p;
 		double xmin = p.x, xmax = p.x, ymin = p.y, ymax = p.y;
 		int split_no = 0;
 		
-		for(DynamicSegmentLong s : S) {
+		for(EdgeLong s : S) {
 			if(xmin > s.p.x) {
 				xmin = s.p.x;
 			}
@@ -282,8 +352,8 @@ public class TMap {
 		}
 		
 		Trapezoid D0 = new Trapezoid(new Point2d(xmin, ymin), new Point2d(xmax, ymax), 
-				new DynamicSegmentLong(new Point2d(xmin, ymax), new Point2d(xmax, ymax)), 
-				new DynamicSegmentLong(new Point2d(xmin, ymin), new Point2d(xmax, ymin)));
+				new Segment(new Point2d(xmin, ymax), new Point2d(xmax, ymax)), 
+				new Segment(new Point2d(xmin, ymin), new Point2d(xmax, ymin)));
 		D0.id = -1;
 		D0.upper_left = null;
 		D0.upper_right = null;
@@ -300,12 +370,13 @@ public class TMap {
 		int n = 0;
 		int prev = 0;
 		int N = S.size();
+		Context c = new Context();
 
 		while(!S.isEmpty()) {
-			DynamicSegmentLong s = S.remove(0);
+			EdgeLong s = S.remove(0);
 			split_no++;
-			s.above = null;
-			s.below = null;
+			c.above = null;
+			c.below = null;
 			int subsplit = 0;
 			PrintStream out;
 //			dout.print("Adding "+s+". ");
@@ -314,21 +385,21 @@ public class TMap {
 			
 			if(compare(s.q, d0.right) == 0) {
 				if(compare(s.p, d0.left) == 0) {
-					split(d0, s, split_no, subsplit);
+					split(d0, s, c, split_no, subsplit);
 				} else {
-					splitP(d0, s, split_no, subsplit);
+					splitP(d0, s, c, split_no, subsplit);
 				}
 			} else if(compare(s.q, d0.right) < 0) {
 				if(compare(d0.left, s.p) == 0) {
-					splitQ(d0, s, split_no, subsplit);					
+					splitQ(d0, s, c, split_no, subsplit);					
 				} else {
 					split4(d0, s, split_no, subsplit);
 				}				
 			} else {
 				if(compare(d0.left, s.p) == 0) {
-					split(d0, s, split_no, subsplit);					
+					split(d0, s, c, split_no, subsplit);					
 				} else {
-					splitP(d0, s, split_no, subsplit);
+					splitP(d0, s, c, split_no, subsplit);
 				}				
 				
 				Trapezoid t = d0;
@@ -342,7 +413,7 @@ public class TMap {
 				while(compare(s.q, t.right) > 0) {
 					subsplit++;
 					
-					split(t, s, split_no, subsplit);
+					split(t, s, c, split_no, subsplit);
 					
 					if(s.below(t.right)) {
 						t = t.lower_right;
@@ -351,19 +422,17 @@ public class TMap {
 					}
 				}
 				if(compare(s.q, t.right) == 0) {
-					split(t, s, split_no, subsplit);
+					split(t, s, c, split_no, subsplit);
 				} else {
-					splitQ(t, s, split_no, subsplit);
+					splitQ(t, s, c, split_no, subsplit);
 				}
 			}
-			s.above = null;
-			s.below = null;
 			
 			n++;
 			
 			if((n*10/N) != prev) {
 				prev = n*10/N;
-				System.out.println(prev*10+"% completed ("+n+" out of "+N+").");
+				System.out.println(new Date()+" "+prev*10+"% completed ("+n+" out of "+N+").");
 			}
 		}
 		
@@ -440,62 +509,51 @@ public class TMap {
 	}
 	
 	static <T> void writeMap(DynamicNode n, PrintStream out) {
-		if(n != null && !n.mark) {
-			n.mark = true;
-			if(n.nn instanceof TNodeLong/* && (n.d.left.x != n.d.right.x)*/) {
-				TNode<Trapezoid> tn = (TNode<Trapezoid>)n.nn;
-				Trapezoid t = tn.id;
-				double at = t.top.slope();
-				double ab = t.bottom.slope();
-				if(Double.isFinite(ab) && Double.isFinite(at)) {
-					out.print(t.id+"|");
-					out.print("POLYGON((");
-					double bt = t.top.p.y - at*t.top.p.x;
-					double y = (at*t.left.x+bt);
-					double x = t.left.x;
-					out.print(x+" "+y+", ");
-					y = (at*t.right.x+bt);
-					x = t.right.x;
-					out.print(x+" "+y+", ");
-					double bb = t.bottom.p.y - ab*t.bottom.p.x;
-					out.print(t.right.x+" "+(ab*t.right.x+bb)+", ");
-					out.print(t.left.x+" "+(ab*t.left.x+bb)+", ");
-					out.print(t.left.x+" "+(at*t.left.x+bt));
-					out.print("))");
-					out.print("|"+t.top.left_id+"|"+t.bottom.right_id+"|");
-					out.println("|"+t.left+
-							"|"+t.right+
-							"|"+(t.upper_left == null ? "null" : t.upper_left.id)+
-							"|"+(t.lower_left == null ? "null" : t.lower_left.id)+
-							"|"+(t.upper_right == null ? "null" : t.upper_right.id)+
-							"|"+(t.lower_right == null ? "null" : t.lower_right.id));
-					out.print(t.id+"-l|");
-					out.print("POINT(");
-					out.print(t.left.x+" "+t.left.y);
-					out.print(")");
-					out.println("|||||||||||");
-					out.print(t.id+"-r|");
-					out.print("POINT(");
-					out.print(t.right.x+" "+t.right.y);
-					out.print(")");
-					out.println("|||||||||||");
-				}			
-			} else {			
-				writeMap((DynamicNode)((DecisionNode)n.nn).left, out);
-				writeMap((DynamicNode)((DecisionNode)n.nn).right, out);
-			}
-		}		
-	}
-	
-	static <T> void setMark(DynamicNode n, boolean mark) {
-		if((n != null) && (n.mark != mark)) {
-			n.mark = mark;
-//			if(n.d != null) {
-//				n.d.mark = mark;
+//		if(n != null && !n.mark) {
+//			n.mark = true;
+//			if(n.nn instanceof TNodeLong/* && (n.d.left.x != n.d.right.x)*/) {
+//				TNode<Trapezoid> tn = (TNode<Trapezoid>)n.nn;
+//				Trapezoid t = tn.id;
+//				double at = t.top.slope();
+//				double ab = t.bottom.slope();
+//				if(Double.isFinite(ab) && Double.isFinite(at)) {
+//					out.print(t.id+"|");
+//					out.print("POLYGON((");
+//					double bt = t.top.p.y - at*t.top.p.x;
+//					double y = (at*t.left.x+bt);
+//					double x = t.left.x;
+//					out.print(x+" "+y+", ");
+//					y = (at*t.right.x+bt);
+//					x = t.right.x;
+//					out.print(x+" "+y+", ");
+//					double bb = t.bottom.p.y - ab*t.bottom.p.x;
+//					out.print(t.right.x+" "+(ab*t.right.x+bb)+", ");
+//					out.print(t.left.x+" "+(ab*t.left.x+bb)+", ");
+//					out.print(t.left.x+" "+(at*t.left.x+bt));
+//					out.print("))");
+//					out.print("|"+t.top.left_id+"|"+t.bottom.right_id+"|");
+//					out.println("|"+t.left+
+//							"|"+t.right+
+//							"|"+(t.upper_left == null ? "null" : t.upper_left.id)+
+//							"|"+(t.lower_left == null ? "null" : t.lower_left.id)+
+//							"|"+(t.upper_right == null ? "null" : t.upper_right.id)+
+//							"|"+(t.lower_right == null ? "null" : t.lower_right.id));
+//					out.print(t.id+"-l|");
+//					out.print("POINT(");
+//					out.print(t.left.x+" "+t.left.y);
+//					out.print(")");
+//					out.println("|||||||||||");
+//					out.print(t.id+"-r|");
+//					out.print("POINT(");
+//					out.print(t.right.x+" "+t.right.y);
+//					out.print(")");
+//					out.println("|||||||||||");
+//				}			
+//			} else {			
+//				writeMap((DynamicNode)((DecisionNode)n.nn).left, out);
+//				writeMap((DynamicNode)((DecisionNode)n.nn).right, out);
 //			}
-//			setMark((DynamicNode<T>)n.left, mark);
-//			setMark((DynamicNode<T>)n.right, mark);
-		}
+//		}	
 	}
 	
 	static <T> void writeLinks(Set<Trapezoid> D, PrintStream out) {
@@ -509,29 +567,29 @@ public class TMap {
 	}
 	
 	static <T> void write(Set<Trapezoid> map, PrintStream out) {
-		for(Trapezoid t : map) {
-			double at = t.top.slope();
-			double ab = t.bottom.slope();
-			if(Double.isFinite(ab) && Double.isFinite(at) && (t.left.x != t.right.x)) {
-				out.print(t.id+"|");
-				out.print("POLYGON((");
-				double bt = t.top.p.y - at*t.top.p.x;
-				out.print(t.left.x+" "+(at*t.left.x+bt)+", ");
-				out.print(t.right.x+" "+(at*t.right.x+bt)+", ");
-				double bb = t.bottom.p.y - ab*t.bottom.p.x;
-				out.print(t.right.x+" "+(ab*t.right.x+bb)+", ");
-				out.print(t.left.x+" "+(ab*t.left.x+bb)+", ");
-				out.print(t.left.x+" "+(at*t.left.x+bt));
-				out.print("))");
-				out.print("|"+t.top.left_id+"|"+t.bottom.right_id+"|");
-				out.println("|"+t.left+
-						"|"+t.right+
-						"|"+(t.upper_left == null ? "null" : t.upper_left.id)+
-						"|"+(t.lower_left == null ? "null" : t.lower_left.id)+
-						"|"+(t.upper_right == null ? "null" : t.upper_right.id)+
-						"|"+(t.lower_right == null ? "null" : t.lower_right.id));
-			}
-		}
+//		for(Trapezoid t : map) {
+//			double at = t.top.slope();
+//			double ab = t.bottom.slope();
+//			if(Double.isFinite(ab) && Double.isFinite(at) && (t.left.x != t.right.x)) {
+//				out.print(t.id+"|");
+//				out.print("POLYGON((");
+//				double bt = t.top.p.y - at*t.top.p.x;
+//				out.print(t.left.x+" "+(at*t.left.x+bt)+", ");
+//				out.print(t.right.x+" "+(at*t.right.x+bt)+", ");
+//				double bb = t.bottom.p.y - ab*t.bottom.p.x;
+//				out.print(t.right.x+" "+(ab*t.right.x+bb)+", ");
+//				out.print(t.left.x+" "+(ab*t.left.x+bb)+", ");
+//				out.print(t.left.x+" "+(at*t.left.x+bt));
+//				out.print("))");
+//				out.print("|"+t.top.left_id+"|"+t.bottom.right_id+"|");
+//				out.println("|"+t.left+
+//						"|"+t.right+
+//						"|"+(t.upper_left == null ? "null" : t.upper_left.id)+
+//						"|"+(t.lower_left == null ? "null" : t.lower_left.id)+
+//						"|"+(t.upper_right == null ? "null" : t.upper_right.id)+
+//						"|"+(t.lower_right == null ? "null" : t.lower_right.id));
+//			}
+//		}
 	}
 		
 	static void add(Polygon poly, HashMap<Tuple2<Point2d, Point2d>, EdgeLong> edges, long id) {
@@ -542,10 +600,22 @@ public class TMap {
 			Point p = r.getPoint(0);
 			Point2d p1 = new Point2d(p.x, p.y);
 			
+			if(points.containsKey(p1)) {
+				p1 = points.get(p1);
+			} else {
+				points.put(p1, p1);
+			}
+			
 			for(int k = 1; k < r.numPoints(); k++) {
 				p = r.getPoint(k);
 				Point2d p2 = new Point2d(p.x, p.y);
 
+				if(points.containsKey(p2)) {
+					p2 = points.get(p2);
+				} else {
+					points.put(p2, p2);
+				}
+				
 				// look for other half of the edge
 				EdgeLong e = edges.get(new Tuple2<Point2d, Point2d>(p2, p1));
 				
@@ -570,12 +640,16 @@ public class TMap {
 	public static void main(String[] args) throws Exception {
 		dout = new PrintStream("history.txt");
 		System.out.println(new Date()+" start.");
+		double xmin = -180.0, xmax = 180.0, ymin = -90.0, ymax = 90.0;
+		EdgeLong[] S;
+		ObjectOutputStream oout;
+		
 		Connection c = DriverManager.getConnection("jdbc:postgresql://localhost/serg", "serg", "");
 		
 		PreparedStatement stmt = c.prepareStatement("SELECT geom, geoid FROM tl_2015_25_bg");
+//		PreparedStatement stmt = c.prepareStatement("SELECT geom, geoid FROM bg15 WHERE statefp not in ('02', '15', '60', '64', '66', '68', '69', '70', '72', '74', '78', '81', '84', '86', '67', '89', '71', '76', '95', '79')");
 //		PreparedStatement stmt = c.prepareStatement("SELECT geom, tzid FROM tz_world");
 		ResultSet rs = stmt.executeQuery();
-		List<Polygon2d> polys = new ArrayList<Polygon2d>(10000);
 		
 		System.out.println(new Date()+" query executed.");
 
@@ -599,66 +673,96 @@ public class TMap {
 		c.close();
 		System.out.println(new Date()+" edges created.");
 
-		List<DynamicSegmentLong> S = new LinkedList<DynamicSegmentLong>();
-		
-		for(EdgeLong e : edges.values()) {
-			S.add(new DynamicSegmentLong(e.p, e.q, e.left, e.right));
+		List<EdgeLong> ed = new LinkedList<EdgeLong>(edges.values());
+		Collections.shuffle(ed);
+
+		Point2d p = ed.get(0).p;
+		xmin = p.x; xmax = p.x; ymin = p.y; ymax = p.y;
+		S = new EdgeLong[100000];
+		oout = new ObjectOutputStream(new FileOutputStream("ma-long.bin"));
+		int i = 0;
+
+		for(EdgeLong e : ed) {
+			EdgeLong s = new EdgeLong(e.p, e.q, e.left, e.right);
+			
+			if(xmin > s.p.x) {
+				xmin = s.p.x;
+			}
+			if(xmin > s.q.x) {
+				xmin = s.q.x;
+			}
+			if(ymin > s.p.y) {
+				ymin = s.p.y;
+			}
+			if(ymin > s.q.y) {
+				ymin = s.q.y;
+			}
+			if(xmax < s.p.x) {
+				xmax = s.p.x;
+			}
+			if(xmax < s.q.x) {
+				xmax = s.q.x;
+			}
+			if(ymax < s.p.y) {
+				ymax = s.p.y;
+			}
+			if(ymax < s.q.y) {
+				ymax = s.q.y;
+			}
+			
+			if(i == S.length) {
+				i = 0;
+				oout.writeObject(S);
+				oout.reset();
+				System.out.print('.');
+			}
+			
+			S[i] = s;
+			i++;
 		}
 		
-		edges.clear();
-		System.out.println(new Date()+" segments created.");
-
+		oout.writeObject(S);
+		oout.close();
+		S = null;
+		System.out.println();
 		
-//		HashMap<Point2d, Point2d> P = new HashMap<Point2d, Point2d>(1000000);	
-//
-//		List<DynamicSegment<String>> S = new LinkedList<DynamicSegment<String>>();
-//		while(rs.next()) {
-//			Geometry geom = ((PGgeometry)rs.getObject("geom")).getGeometry();
-//			String right_id = rs.getString("right_id");
-//			String left_id = rs.getString("left_id");
-//			String edge_id = rs.getString("edge_id");
-//			
-//			if(right_id == null) {
-//				right_id = "0";
-//			}
-//			
-//			if(left_id == null) {
-//				left_id = "0";
-//			}
-//			
-//			if(geom.getType() == Geometry.LINESTRING) {
-//				Point[] points = ((LineString)geom).getPoints();
-//				
-//				for(int i = 1; i < points.length; i++) {
-//					if(points[i].x != points[i-1].x) {
-//						Point2d t = new Point2d(points[i-1].x, points[i-1].y);
-//						Point2d p = P.get(t);
-//						
-//						if(p == null) {
-//							p = t;
-//							P.put(t, t);
-//						}
-//						
-//						t = new Point2d(points[i].x, points[i].y);
-//						Point2d q = P.get(t);
-//						
-//						if(q == null) {
-//							q = t;
-//							P.put(t, t);
-//						}
-//						
-//						S.add(new DynamicSegment<String>(edge_id+"-"+(i-1), p, q, left_id, right_id));
-//					}
-//				}
-//			} else {
-//				throw new Exception("Unsupported geometry type: '"+geom.getTypeString()+"'");
-//			}
-//		}
-//		rs.close();
-//		stmt.close();
-//		c.close();
+		edges.clear();
+		edges = null;
+		System.out.println(new Date()+" segments saved.");
+		
+		System.gc();
+		Thread.currentThread().sleep(1000);
+		System.gc();
+		Thread.currentThread().sleep(1000);
 
-		DynamicNode dynamicIndex = build(S);
+		Trapezoid D0 = new Trapezoid(new Point2d(xmin, ymin), new Point2d(xmax, ymax), 
+				new EdgeLong(new Point2d(xmin, ymax), new Point2d(xmax, ymax)), 
+				new EdgeLong(new Point2d(xmin, ymin), new Point2d(xmax, ymin)));
+		D0.id = -1;
+		D0.upper_left = null;
+		D0.upper_right = null;
+		D0.lower_left = null;
+		D0.lower_left = null;
+			
+		DynamicNode root = new DynamicNode(D0);
+		D0.node = root;
+
+		ObjectInputStream ois = new ObjectInputStream(new FileInputStream("ma-long.bin"));
+		
+		S = (EdgeLong[])ois.readObject();
+		while(S != null) {
+			add(root, S);
+			System.out.print('.');
+			try {
+				S = null;
+				S = (EdgeLong[])ois.readObject();
+			}
+			catch(EOFException e) {
+				// no-op
+			}
+		}
+		
+		ois.close();
 		System.out.println(new Date()+" index built.");
 
 //		PrintStream tout = new PrintStream("tree.dot");
@@ -669,7 +773,6 @@ public class TMap {
 //		tout.close();
 //		
 		
-		setMark(dynamicIndex, false);
 //		PrintStream mout = new PrintStream("ma-index.txt");
 //		PrintStream mout = new PrintStream("tz_world-index.txt");
 //		writeMap(dynamicIndex, mout);
@@ -677,25 +780,25 @@ public class TMap {
 
 //		HashMap<DynamicNode<String>, Node<String>> M = new HashMap<DynamicNode<String>, Node<String>>(1000000);
 //		setMark(dynamicIndex, false);
-		NodeLong index = dynamicIndex.simplify();
+		NodeLong index = root.simplify();
 		
-		dynamicIndex = null;
+		root = null;
 		
 		System.gc();
 		Thread.currentThread().sleep(1000);
 		System.gc();
 		Thread.currentThread().sleep(1000);
 		
-		ObjectOutputStream oout = new ObjectOutputStream(new FileOutputStream("ma-long.idx"));
-//		ObjectOutputStream oout = new ObjectOutputStream(new FileOutputStream("tz_world.idx"));
-		oout.writeObject(index);
-		oout.close();
+//		oout = new ObjectOutputStream(new FileOutputStream("ma-long.idx"));
+////		ObjectOutputStream oout = new ObjectOutputStream(new FileOutputStream("tz_world.idx"));
+//		oout.writeObject(index);
+//		oout.close();
 		
 //		setMark(dynamicIndex, false);
-//		mout = new PrintStream("map-index-simple.txt");
+//		PrintStream mout = new PrintStream("map-index-simple.txt");
 //		writeMap(index, mout);
 //		mout.close();
-		System.out.println(new Date()+" index saved.");
+//		System.out.println(new Date()+" index saved.");
 
 		Scanner s = new Scanner(new BufferedInputStream(new FileInputStream(args[0])));
 		

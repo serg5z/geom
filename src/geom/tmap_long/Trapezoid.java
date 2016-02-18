@@ -1,16 +1,10 @@
 package geom.tmap_long;
 
-import java.io.Serializable;
-
 import geom.Point2d;
+import geom.tmap.Segment;
 
-class Trapezoid implements Serializable {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	
-	public Trapezoid(Point2d left, Point2d right, DynamicSegmentLong top, DynamicSegmentLong bottom) {
+class Trapezoid {
+	public Trapezoid(Point2d left, Point2d right, Segment top, Segment bottom) {
 		if(left.x > right.x) {
 			throw new RuntimeException(left+" > "+right);
 		}
@@ -88,8 +82,8 @@ class Trapezoid implements Serializable {
 	long id;
 	Point2d left;
 	Point2d right;
-	DynamicSegmentLong top;
-	DynamicSegmentLong bottom;
+	Segment top;
+	Segment bottom;
 	transient Trapezoid upper_left;
 	transient Trapezoid lower_left;
 	transient Trapezoid upper_right;

@@ -45,5 +45,5 @@ public class XNodeLong extends DecisionNode {
 		return p.toString();
 	}
 
-	Point2d p;
+	public Point2d p;
 }

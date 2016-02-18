@@ -70,7 +70,7 @@ public class Segment implements Serializable {
 	}
 
 	public static int ccw(final Point2d p1, final Point2d p2, final Point2d p3) {
-		int n = 0;
+		int n = -1;
 		final double dx21 = p2.x - p1.x;
 		final double dy21 = p2.y - p1.y;
 		final double dx31 = p3.x - p1.x;
@@ -115,4 +115,8 @@ public class Segment implements Serializable {
 
 	public Point2d p;
 	public Point2d q;
+
+	public double slope() {
+		return (q.y-p.y)/(q.x-p.x);
+	}
 }

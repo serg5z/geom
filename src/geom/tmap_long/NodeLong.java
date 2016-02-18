@@ -5,7 +5,7 @@ import java.io.Serializable;
 import geom.Point2d;
 import geom.tmap.Segment;
 
-interface NodeLong extends Serializable {
+public interface NodeLong extends Serializable {
 	long locate(Point2d q);
 	long locate(Segment q);
 }

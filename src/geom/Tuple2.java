@@ -8,7 +8,7 @@ public class Tuple2<T1, T2> {
 	
 	@Override
 	public int hashCode() {
-		return e1.hashCode()+e2.hashCode();
+		return (e1 == null ? 0 : e1.hashCode()) + (e2 == null ? 0 : e2.hashCode());
 	}
 	
 	@Override
@@ -19,12 +19,12 @@ public class Tuple2<T1, T2> {
  			@SuppressWarnings("rawtypes")
 			Tuple2 t = (Tuple2)o;
 
-			result = e1.equals(t.e1) && e2.equals(t.e2);
+			result = (e1 == null ? t.e1 == null : e1.equals(t.e1)) && (e2 == null ? t.e2 == null : e2.equals(t.e2));
 		}
 		
 		return result;
 	}
 	
-	T1 e1;
-	T2 e2;
+	public T1 e1;
+	public T2 e2;
 }

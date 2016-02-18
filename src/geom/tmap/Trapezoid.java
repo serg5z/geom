@@ -4,13 +4,17 @@ import java.io.Serializable;
 
 import geom.Point2d;
 
-class Trapezoid<T> implements Serializable {
+public class Trapezoid<T> implements Serializable {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	
-	public Trapezoid(Point2d left, Point2d right, DynamicSegment<T> top, DynamicSegment<T> bottom) {
+	public Trapezoid(Point2d left, Point2d right, Segment top, Segment bottom) {
+		this(null, left, right, top, bottom);
+	}
+	
+	public Trapezoid(T id, Point2d left, Point2d right, Segment top, Segment bottom) {
 		if(left.x > right.x) {
 			throw new RuntimeException(left+" > "+right);
 		}
@@ -18,6 +22,7 @@ class Trapezoid<T> implements Serializable {
 		this.right = right;
 		this.top = top;
 		this.bottom = bottom;
+		this.node = new DynamicNode<T>(this);
 	}
 	
 	public boolean contains(Point2d p) {
@@ -86,14 +91,14 @@ class Trapezoid<T> implements Serializable {
 		return "{"+left+" <-> "+right+" ^ "+top+" v "+bottom +" id:"+id+"}";
 	}
 	
-	T id;
-	Point2d left;
-	Point2d right;
-	DynamicSegment<T> top;
-	DynamicSegment<T> bottom;
-	transient Trapezoid<T> upper_left;
-	transient Trapezoid<T> lower_left;
-	transient Trapezoid<T> upper_right;
-	transient Trapezoid<T> lower_right;
-	transient DynamicNode<T> node;
+	public T id;
+	public Point2d left;
+	public Point2d right;
+	public Segment top;
+	public Segment bottom;
+	transient public Trapezoid<T> upper_left;
+	transient public Trapezoid<T> lower_left;
+	transient public Trapezoid<T> upper_right;
+	transient public Trapezoid<T> lower_right;
+	transient public DynamicNode<T> node;
 }

@@ -1,17 +1,32 @@
 package geom.tmap_long;
 
 import geom.Point2d;
+import geom.tmap.Segment;
 
-public class EdgeLong {
+public class EdgeLong extends Segment {
+	private static final long serialVersionUID = 1L;
+	
 	public EdgeLong(Point2d p, Point2d q) {
 		this(p, q, -1, -1);
 	}
 	
 	public EdgeLong(Point2d p, Point2d q, long left, long right) {
-		this.p = p;
-		this.q = q;
-		this.left = left;
-		this.right = right;
+		super(p, q);
+		if(p.x < q.x) {
+			this.left = left;
+			this.right = right;
+		} else if(p.x > q.x) {
+			this.left = right;
+			this.right = left;
+		} else {
+			if(p.y < q.y) {
+				this.left = left;
+				this.right = right;
+			} else {
+				this.left = right;
+				this.right = left;
+			}
+		}
 	}
 
 	@Override
@@ -38,8 +53,6 @@ public class EdgeLong {
 		return "{" + p + " -> " + q + " left: " + left + "; right: " + right +"}";
 	}
 
-	public Point2d p;
-	public Point2d q;
 	public long left;
 	public long right;
 }
