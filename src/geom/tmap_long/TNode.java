@@ -3,13 +3,13 @@ package geom.tmap_long;
 import geom.Point2d;
 import geom.tmap.Segment;
 
-public class TNodeLong implements NodeLong {
+public class TNode implements Node {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public TNodeLong(long id) {
+	public TNode(long id) {
 		this.id = id;
 	}
 	
@@ -23,6 +23,24 @@ public class TNodeLong implements NodeLong {
 		return id;
 	}
 	
+	@Override
+	public int hashCode() {
+		return Long.hashCode(id);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		boolean result = false;
+
+		if (obj instanceof TNode) {
+			TNode t = (TNode)obj;
+
+			result = t.id == id;
+		}
+		
+		return result;
+	}
+
 	@Override
 	public String toString() {
 		return String.valueOf(id);

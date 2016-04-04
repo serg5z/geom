@@ -3,14 +3,14 @@ package geom.tmap_long;
 import geom.Point2d;
 import geom.tmap.Segment;
 
-public class EdgeLong extends Segment {
+public class Edge extends Segment {
 	private static final long serialVersionUID = 1L;
 	
-	public EdgeLong(Point2d p, Point2d q) {
+	public Edge(Point2d p, Point2d q) {
 		this(p, q, -1, -1);
 	}
 	
-	public EdgeLong(Point2d p, Point2d q, long left, long right) {
+	public Edge(Point2d p, Point2d q, long left, long right) {
 		super(p, q);
 		if(p.x < q.x) {
 			this.left = left;
@@ -38,9 +38,9 @@ public class EdgeLong extends Segment {
 	public boolean equals(Object obj) {
 		boolean result = false;
 
-		if (obj instanceof EdgeLong) {
+		if (obj instanceof Edge) {
 			@SuppressWarnings("rawtypes")
-			EdgeLong s = (EdgeLong)obj;
+			Edge s = (Edge)obj;
 
 			result = p.equals(s.p) && q.equals(s.q) && (left == s.left) && (right == s.right);
 		}

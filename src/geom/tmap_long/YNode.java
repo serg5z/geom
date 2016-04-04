@@ -3,24 +3,24 @@ package geom.tmap_long;
 import geom.Point2d;
 import geom.tmap.Segment;
 
-public class YNodeLong extends DecisionNode {
+public class YNode extends DecisionNode {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public YNodeLong (Segment s) {
+	public YNode (Segment s) {
 		this(s, null, null);
 	}
 	
-	public YNodeLong (Segment s, NodeLong left, NodeLong right) {
+	public YNode (Segment s, Node left, Node right) {
 		super(left, right);
 		this.s = s;
 	}
 		
 	@Override
 	public long locate(Point2d q) {
-		NodeLong n = right;
+		Node n = right;
 		
 		if(s.below(q)) {
 			n = left;
@@ -31,7 +31,7 @@ public class YNodeLong extends DecisionNode {
 	
 	@Override
 	public long locate(Segment q) {
-		NodeLong n = right;
+		Node n = right;
 		
 		if(s.below(q)) {
 			n = left;
@@ -40,6 +40,24 @@ public class YNodeLong extends DecisionNode {
 		return n.locate(q);
 	}
 	
+	@Override
+	public int hashCode() {
+		return s.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		boolean result = false;
+
+		if (obj instanceof YNode) {
+			YNode y = (YNode)obj;
+
+			result = s.equals(y.s) && left.equals(y.left) && right.equals(y.right);
+		}
+		
+		return result;
+	}
+
 	@Override
 	public String toString() {
 		return s.toString();

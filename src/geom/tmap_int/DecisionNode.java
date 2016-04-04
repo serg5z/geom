@@ -1,4 +1,4 @@
-package geom.tmap_long;
+package geom.tmap_int;
 
 abstract public class DecisionNode implements Node {
 	/**

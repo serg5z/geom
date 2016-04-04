@@ -1,4 +1,4 @@
-package geom.tmap_long;
+package geom.tmap_int;
 
 import java.io.FileNotFoundException;
 import java.io.Serializable;
@@ -11,15 +11,15 @@ import geom.tmap.DynamicNode;
 import geom.tmap.Segment;
 import geom.tmap.Trapezoid;
 
-public class IndexLong implements Index, Serializable {
+public class IndexInt implements Index, Serializable {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	
 	static class Context {
-		Trapezoid<Long> above;
-		Trapezoid<Long> below;		
+		Trapezoid<Integer> above;
+		Trapezoid<Integer> below;		
 	}
 
 	public static class Singular implements Index, Serializable {
@@ -28,26 +28,26 @@ public class IndexLong implements Index, Serializable {
 		 */
 		private static final long serialVersionUID = 1L;
 
-		Singular(long id) { this.id = id;}
+		Singular(int id) { this.id = id;}
 		
 		@Override
-		public long locate(Point2d q) { return id; }
+		public int locate(Point2d q) { return id; }
 		
-		private long id;
+		private int id;
 	}
 	
 	public static Index EMPTY = new Singular(0);
 	
-	public IndexLong() {
+	public IndexInt() {
 		edges = new HashMap<Tuple2<Point2d, Point2d>, Edge>();
 		points = new HashMap<Point2d, Point2d>();
 	}
 	
-	public long locate(Point2d q) {
+	public int locate(Point2d q) {
 		return root.locate(q);
 	}
 	
-	public void add(Point2d p1, Point2d p2, long right_id) {
+	public void add(Point2d p1, Point2d p2, int right_id) {
 		Point2d p = points.get(p1);
 		if(p == null) {
 			points.put(p1, p1);
@@ -103,14 +103,14 @@ public class IndexLong implements Index, Serializable {
 		return result;
 	}
 
-	private void split(Trapezoid<Long> t, Edge e, Context c) {
+	private void split(Trapezoid<Integer> t, Edge e, Context c) {
 		Point2d l = t.left;
 		Point2d r = t.right;
 
-		Trapezoid<Long> A;
-		Trapezoid<Long> B;
-		DynamicNode<Long> nA;
-		DynamicNode<Long> nB;
+		Trapezoid<Integer> A;
+		Trapezoid<Integer> B;
+		DynamicNode<Integer> nA;
+		DynamicNode<Integer> nB;
 		
 		if((c.above != null) && t.top.equals(c.above.top)) {
 			A = c.above;
@@ -118,8 +118,8 @@ public class IndexLong implements Index, Serializable {
 			A.updateRight(t.upper_right, null);
 			A.right = t.right;
 		} else {
-			A = new Trapezoid<Long>(l, r, t.top, e);
-			nA = new DynamicNode<Long>(A);
+			A = new Trapezoid<Integer>(l, r, t.top, e);
+			nA = new DynamicNode<Integer>(A);
 			A.id = e.left;
 			A.update(t.upper_left, c.above, t.upper_right, null);
 			c.above = A;
@@ -131,21 +131,21 @@ public class IndexLong implements Index, Serializable {
 			B.updateRight(null, t.lower_right);
 			B.right = t.right;
 		} else {
-			B = new Trapezoid<Long>(l, r, e, t.bottom);
-			nB = new DynamicNode<Long>(B);
+			B = new Trapezoid<Integer>(l, r, e, t.bottom);
+			nB = new DynamicNode<Integer>(B);
 			B.id = e.right;
 			B.update(c.below, t.lower_left, null, t.lower_right);
 			c.below = B;
 		}
 		
-		t.node.nn = new geom.tmap.YNode<Trapezoid<Long>>(e, nA, nB);
+		t.node.nn = new geom.tmap.YNode<Trapezoid<Integer>>(e, nA, nB);
 	}
 
-	private void split4(Trapezoid<Long> t, Edge e) {
-		Trapezoid<Long> A = new Trapezoid<Long>(t.left, e.p, t.top, t.bottom);
-		Trapezoid<Long> B = new Trapezoid<Long>(e.q, t.right, t.top, t.bottom);
-		Trapezoid<Long> C = new Trapezoid<Long>(e.p, e.q, t.top, e);
-		Trapezoid<Long> D = new Trapezoid<Long>(e.p, e.q, e, t.bottom);
+	private void split4(Trapezoid<Integer> t, Edge e) {
+		Trapezoid<Integer> A = new Trapezoid<Integer>(t.left, e.p, t.top, t.bottom);
+		Trapezoid<Integer> B = new Trapezoid<Integer>(e.q, t.right, t.top, t.bottom);
+		Trapezoid<Integer> C = new Trapezoid<Integer>(e.p, e.q, t.top, e);
+		Trapezoid<Integer> D = new Trapezoid<Integer>(e.p, e.q, e, t.bottom);
 		
 		A.id = t.id;
 		B.id = t.id;
@@ -157,24 +157,24 @@ public class IndexLong implements Index, Serializable {
 		D.update(null, A, null, B);
 		B.updateRight(t.upper_right, t.lower_right);
 				
-		t.node.nn = new geom.tmap.XNode<Trapezoid<Long>>(
+		t.node.nn = new geom.tmap.XNode<Trapezoid<Integer>>(
 				e.p,
-				new DynamicNode<Long>(A),
-				new DynamicNode<Long>(
+				new DynamicNode<Integer>(A),
+				new DynamicNode<Integer>(
 						e.q, 
-						new DynamicNode<Long>(
+						new DynamicNode<Integer>(
 								e, 
-								new DynamicNode<Long>(C), 
-								new DynamicNode<Long>(D)), 
-						new DynamicNode<Long>(B)));
+								new DynamicNode<Integer>(C), 
+								new DynamicNode<Integer>(D)), 
+						new DynamicNode<Integer>(B)));
 	}
 
-	private void splitP(Trapezoid<Long> t, Edge e, Context c) {
+	private void splitP(Trapezoid<Integer> t, Edge e, Context c) {
 		Point2d r = min(e.q, t.right);
 		
-		Trapezoid<Long> A = new Trapezoid<Long>(t.left, e.p, t.top, t.bottom);
-		Trapezoid<Long> B = new Trapezoid<Long>(e.p, r, t.top, e);
-		Trapezoid<Long> C = new Trapezoid<Long>(e.p, r, e, t.bottom);
+		Trapezoid<Integer> A = new Trapezoid<Integer>(t.left, e.p, t.top, t.bottom);
+		Trapezoid<Integer> B = new Trapezoid<Integer>(e.p, r, t.top, e);
+		Trapezoid<Integer> C = new Trapezoid<Integer>(e.p, r, e, t.bottom);
 		
 		A.id = t.id;
 		B.id = e.left;
@@ -184,35 +184,35 @@ public class IndexLong implements Index, Serializable {
 		B.update(A, null, t.upper_right, null);
 		C.update(null, A, null, t.lower_right);
 		
-		t.node.nn = new geom.tmap.XNode<Trapezoid<Long>>(
+		t.node.nn = new geom.tmap.XNode<Trapezoid<Integer>>(
 				e.p, 
-				new DynamicNode<Long>(A), 
-				new DynamicNode<Long>(
+				new DynamicNode<Integer>(A), 
+				new DynamicNode<Integer>(
 						e, 
-						new DynamicNode<Long>(B), 
-						new DynamicNode<Long>(C)));
+						new DynamicNode<Integer>(B), 
+						new DynamicNode<Integer>(C)));
 		
 		c.above = B;
 		c.below = C;
 	}
 
-	private void splitQ(Trapezoid<Long> t, Edge e, Context c) {
+	private void splitQ(Trapezoid<Integer> t, Edge e, Context c) {
 		Point2d l = max(e.p, t.left);
 		
-		Trapezoid<Long> A = new Trapezoid<Long>(e.q, t.right, t.top, t.bottom);
+		Trapezoid<Integer> A = new Trapezoid<Integer>(e.q, t.right, t.top, t.bottom);
 		A.id = t.id;
-		Trapezoid<Long> B;
-		Trapezoid<Long> C;
-		DynamicNode<Long> nB;
-		DynamicNode<Long> nC;
+		Trapezoid<Integer> B;
+		Trapezoid<Integer> C;
+		DynamicNode<Integer> nB;
+		DynamicNode<Integer> nC;
 		
 		if((c.above != null) && t.top.equals(c.above.top)) {
 			B = c.above;
 			nB = B.node;
 			B.right = e.q;
 		} else {
-			B = new Trapezoid<Long>(l, e.q, t.top, e);
-			nB = new DynamicNode<Long>(B);
+			B = new Trapezoid<Integer>(l, e.q, t.top, e);
+			nB = new DynamicNode<Integer>(B);
 			B.id = e.left;
 			B.updateLeft(t.upper_left, c.above);
 		}
@@ -222,24 +222,24 @@ public class IndexLong implements Index, Serializable {
 			nC = C.node;
 			C.right = e.q;
 		} else {
-			C = new Trapezoid<Long>(l, e.q, e, t.bottom);
-			nC = new DynamicNode<Long>(C);
+			C = new Trapezoid<Integer>(l, e.q, e, t.bottom);
+			nC = new DynamicNode<Integer>(C);
 			C.id = e.right;
 			C.updateLeft(c.below, t.lower_left);
 		}
 		
-		t.node.nn = new geom.tmap.XNode<Trapezoid<Long>>(
+		t.node.nn = new geom.tmap.XNode<Trapezoid<Integer>>(
 				e.q,
-				new DynamicNode<Long>(e, nB, nC),
-				new DynamicNode<Long>(A));
+				new DynamicNode<Integer>(e, nB, nC),
+				new DynamicNode<Integer>(A));
 		
 		A.update(B, C, t.upper_right, t.lower_right);
 	}
 
-	private void add(DynamicNode<Long> dynamic_root, Edge e) {
+	private void add(DynamicNode<Integer> dynamic_root, Edge e) {
 		Context c = new Context();
 		
-		Trapezoid<Long> d0 = dynamic_root.locate(e);
+		Trapezoid<Integer> d0 = dynamic_root.locate(e);
 		
 		if(compare(e.q, d0.right) == 0) {
 			if(compare(e.p, d0.left) == 0) {
@@ -260,7 +260,7 @@ public class IndexLong implements Index, Serializable {
 				splitP(d0, e, c);
 			}				
 			
-			Trapezoid<Long> t = d0;
+			Trapezoid<Integer> t = d0;
 
 			if(e.below(d0.right)) {
 				t = d0.lower_right;
@@ -318,10 +318,10 @@ public class IndexLong implements Index, Serializable {
 		points.clear();
 		points = null;
 		
-		Trapezoid<Long> D0 = new Trapezoid<Long>(-1L, new Point2d(xmin, ymin), new Point2d(xmax, ymax), 
+		Trapezoid<Integer> D0 = new Trapezoid<Integer>(-1, new Point2d(xmin, ymin), new Point2d(xmax, ymax), 
 				new Edge(new Point2d(xmin, ymax), new Point2d(xmax, ymax)), 
 				new Edge(new Point2d(xmin, ymin), new Point2d(xmax, ymin)));
-		DynamicNode<Long> dynamic_root = new DynamicNode<Long>(D0);
+		DynamicNode<Integer> dynamic_root = new DynamicNode<Integer>(D0);
 		D0.node = dynamic_root;
 		
 		Edge[] edge_list = edges.values().toArray(new Edge[] {});
@@ -353,23 +353,23 @@ public class IndexLong implements Index, Serializable {
 		ynodes = null;
 	}
 	
-	private Node simplify(DynamicNode<Long> dn) {
-		HashMap<DynamicNode<Long>, Node> node_map = new HashMap<DynamicNode<Long>, Node>();
+	private Node simplify(DynamicNode<Integer> dn) {
+		HashMap<DynamicNode<Integer>, Node> node_map = new HashMap<DynamicNode<Integer>, Node>();
 		simplify(dn, node_map);
 		
 		return node_map.get(dn);
 	}
 	
-	private Node simplify(DynamicNode<Long> dn, HashMap<DynamicNode<Long>, Node> node_map) {
+	private Node simplify(DynamicNode<Integer> dn, HashMap<DynamicNode<Integer>, Node> node_map) {
 		Node n = node_map.get(dn);
 		
 		if(n == null) {
 			if(dn.nn instanceof geom.tmap.TNode<?>) {
-				geom.tmap.TNode<Trapezoid<Long>> t = (geom.tmap.TNode<Trapezoid<Long>>)dn.nn;
-				Long id = t.id.id;
+				geom.tmap.TNode<Trapezoid<Integer>> t = (geom.tmap.TNode<Trapezoid<Integer>>)dn.nn;
+				Integer id = t.id.id;
 				
 				if(id == null) {
-					id = -1L;
+					id = -1;
 				}
 				TNode tnl = new TNode(id);
 				n = leaves.get(tnl);
@@ -378,16 +378,16 @@ public class IndexLong implements Index, Serializable {
 					leaves.put(tnl,  tnl);
 				}
 			} else if(dn.nn instanceof geom.tmap.XNode<?>) {
-				geom.tmap.XNode<Trapezoid<Long>> x = (geom.tmap.XNode<Trapezoid<Long>>)dn.nn;
+				geom.tmap.XNode<Trapezoid<Integer>> x = (geom.tmap.XNode<Trapezoid<Integer>>)dn.nn;
 				
-				Node left = simplify((DynamicNode<Long>)x.left, node_map); 
-				Node right = simplify((DynamicNode<Long>)x.right, node_map); 
+				Node left = simplify((DynamicNode<Integer>)x.left, node_map); 
+				Node right = simplify((DynamicNode<Integer>)x.right, node_map); 
 				n = new XNode(x.p, left, right);
 			} else if(dn.nn instanceof geom.tmap.YNode<?>) {
-				geom.tmap.YNode<Trapezoid<Long>> y = (geom.tmap.YNode<Trapezoid<Long>>)dn.nn;
+				geom.tmap.YNode<Trapezoid<Integer>> y = (geom.tmap.YNode<Trapezoid<Integer>>)dn.nn;
 				
-				Node left = simplify((DynamicNode<Long>)y.left, node_map); 
-				Node right = simplify((DynamicNode<Long>)y.right, node_map);
+				Node left = simplify((DynamicNode<Integer>)y.left, node_map); 
+				Node right = simplify((DynamicNode<Integer>)y.right, node_map);
 				Segment s = new Segment(y.s.p, y.s.q);
 				YNode ynl = new YNode(s, left, right);
 				n = ynodes.get(ynl);

@@ -101,7 +101,7 @@ public class Segment implements Serializable {
 		boolean result = false;
 
 		if (obj instanceof Segment) {
-			Segment s = (Segment) obj;
+			Segment s = (Segment)obj;
 
 			result = p.equals(s.p) && q.equals(s.q);
 		}
