@@ -66,7 +66,11 @@ public class IndexLong implements Index, Serializable {
 			e = new Edge(p1, p2, -1, right_id);
 			edges.put(new Tuple2<Point2d, Point2d>(p1, p2), e);
 		} else {
-			e.left = right_id;
+			if(e.left == -1) {
+				e.left = right_id;
+			} else {
+				e.right = right_id;
+			}
 		}
 	}
 	

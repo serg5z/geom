@@ -1,6 +1,8 @@
 package geom.tmap_int;
 
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Random;
@@ -66,7 +68,11 @@ public class IndexInt implements Index, Serializable {
 			e = new Edge(p1, p2, -1, right_id);
 			edges.put(new Tuple2<Point2d, Point2d>(p1, p2), e);
 		} else {
-			e.left = right_id;
+			if(e.left == -1) {
+				e.left = right_id;
+			} else {
+				e.right = right_id;
+			}
 		}
 	}
 	
@@ -355,12 +361,16 @@ public class IndexInt implements Index, Serializable {
 	
 	private Node simplify(DynamicNode<Integer> dn) {
 		HashMap<DynamicNode<Integer>, Node> node_map = new HashMap<DynamicNode<Integer>, Node>();
-		simplify(dn, node_map);
+		try {
+			simplify(dn, node_map, new PrintStream(new FileOutputStream("index_int.txt")));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 		
 		return node_map.get(dn);
 	}
 	
-	private Node simplify(DynamicNode<Integer> dn, HashMap<DynamicNode<Integer>, Node> node_map) {
+	private Node simplify(DynamicNode<Integer> dn, HashMap<DynamicNode<Integer>, Node> node_map, PrintStream out) {
 		Node n = node_map.get(dn);
 		
 		if(n == null) {
@@ -377,17 +387,32 @@ public class IndexInt implements Index, Serializable {
 					n = tnl;
 					leaves.put(tnl,  tnl);
 				}
+				
+				if(t.id.left.x != t.id.right.x) {
+					double at = t.id.top.slope();
+					double bt = t.id.top.p.y - at*t.id.top.p.x;
+					double ab = t.id.bottom.slope();
+					double bb = t.id.bottom.p.y - ab*t.id.bottom.p.x;
+					
+					out.print(id+"|POLYGON((");
+					out.print(t.id.left.x+" "+(ab*t.id.left.x+bb)+", ");
+					out.print(t.id.right.x+" "+(ab*t.id.right.x+bb)+", ");
+					out.print(t.id.right.x+" "+(at*t.id.right.x+bt)+", ");
+					out.print(t.id.left.x+" "+(at*t.id.left.x+bt)+", ");
+					out.print(t.id.left.x+" "+(ab*t.id.left.x+bb));
+					out.println("))");
+				}
 			} else if(dn.nn instanceof geom.tmap.XNode<?>) {
 				geom.tmap.XNode<Trapezoid<Integer>> x = (geom.tmap.XNode<Trapezoid<Integer>>)dn.nn;
 				
-				Node left = simplify((DynamicNode<Integer>)x.left, node_map); 
-				Node right = simplify((DynamicNode<Integer>)x.right, node_map); 
+				Node left = simplify((DynamicNode<Integer>)x.left, node_map, out); 
+				Node right = simplify((DynamicNode<Integer>)x.right, node_map, out); 
 				n = new XNode(x.p, left, right);
 			} else if(dn.nn instanceof geom.tmap.YNode<?>) {
 				geom.tmap.YNode<Trapezoid<Integer>> y = (geom.tmap.YNode<Trapezoid<Integer>>)dn.nn;
 				
-				Node left = simplify((DynamicNode<Integer>)y.left, node_map); 
-				Node right = simplify((DynamicNode<Integer>)y.right, node_map);
+				Node left = simplify((DynamicNode<Integer>)y.left, node_map, out); 
+				Node right = simplify((DynamicNode<Integer>)y.right, node_map, out);
 				Segment s = new Segment(y.s.p, y.s.q);
 				YNode ynl = new YNode(s, left, right);
 				n = ynodes.get(ynl);
@@ -405,7 +430,7 @@ public class IndexInt implements Index, Serializable {
 	}
 	
 	public Node root;
-	transient HashMap<Tuple2<Point2d, Point2d>, Edge> edges;
+	transient public HashMap<Tuple2<Point2d, Point2d>, Edge> edges;
 	transient HashMap<Point2d, Point2d> points;
 	transient HashMap<TNode, TNode> leaves;
 	transient HashMap<Segment, Segment> segments;
