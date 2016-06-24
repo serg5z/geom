@@ -46,5 +46,5 @@ public class TNode implements Node {
 		return String.valueOf(id);
 	}
 
-	long id;
+	public long id;
 }

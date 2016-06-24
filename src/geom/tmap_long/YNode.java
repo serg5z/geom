@@ -63,5 +63,5 @@ public class YNode extends DecisionNode {
 		return s.toString();
 	}
 
-	Segment s;
+	public Segment s;
 }
